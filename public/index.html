@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTR FAMILY BOT</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #080808;
+  color: #fff;
+}
+
+header {
+  text-align: center;
+  padding: 25px;
+  background: #101010;
+  border-bottom: 1px solid #420909;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 900;
+  color: #ff2929;
+  letter-spacing: 3px;
+  text-shadow: 0 0 15px #ff000077;
+}
+
+header p {
+  color: #888;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  padding: 18px;
+}
+
+.card {
+  background: #121212;
+  border: 1px solid #292929;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+h2 {
+  font-size: 17px;
+  margin-bottom: 15px;
+  color: #fff;
+}
+
+input, textarea {
+  width: 100%;
+  background: #080808;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 8px;
+  padding: 13px;
+  margin: 8px 0 12px;
+  outline: none;
+}
+
+input:focus, textarea:focus {
+  border-color: #ff2929;
+}
+
+button {
+  width: 100%;
+  padding: 13px;
+  background: #e51c1c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+button:active {
+  background: #a80000;
+}
+
+.secondary {
+  background: #242424;
+  border: 1px solid #383838;
+}
+
+.status {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  color: #aaa;
+}
+
+.status strong {
+  color: #ff3636;
+}
+
+#pairCode {
+  text-align: center;
+  color: #ff3333;
+  font-size: 26px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  margin: 18px 0;
+}
+
+.small {
+  color: #888;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.hidden {
+  display: none;
+}
+
+#message {
+  color: #ff5555;
+  text-align: center;
+  padding: 10px;
+  white-space: pre-wrap;
+}
+
+footer {
+  text-align: center;
+  padding: 25px;
+  color: #555;
+  font-size: 12px;
+}
+
+footer span {
+  color: #ff2929;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">HTR FAMILY</div>
+  <p>WHATSAPP BOT CONTROL PANEL</p>
+</header>
+
+<div class="container">
+
+  <div class="card" id="loginCard">
+    <h2>🔐 ADMIN LOGIN</h2>
+
+    <input id="username" placeholder="Username admin">
+    <input id="password" type="password" placeholder="Password admin">
+
+    <button onclick="login()">LOGIN PANEL</button>
+
+    <p class="small" id="loginMessage"></p>
+  </div>
+
+  <div id="dashboard" class="hidden">
+
+    <div class="card">
+      <h2>📡 STATUS BOT</h2>
+
+      <div class="status">
+        <span>Status koneksi</span>
+        <strong id="status">Offline</strong>
+      </div>
+
+      <div class="status">
+        <span>Nomor WhatsApp</span>
+        <strong id="botNumber">Belum terhubung</strong>
+      </div>
+
+      <button class="secondary" onclick="refreshStatus()">
+        REFRESH STATUS
+      </button>
+
+      <button class="secondary" onclick="disconnectBot()">
+        LOGOUT WHATSAPP
+      </button>
+    </div>
+
+    <div class="card">
+      <h2>🔗 CONNECT WHATSAPP</h2>
+
+      <p class="small">
+        Masukkan nomor dengan kode negara.
+        Contoh Indonesia: 628123456789
+      </p>
+
+      <input id="phone" inputmode="numeric"
+      placeholder="628xxxxxxxxxx">
+
+      <button onclick="connectBot()">
+        GENERATE PAIRING CODE
+      </button>
+
+      <div id="pairCode"></div>
+
+      <p class="small">
+        Buka WhatsApp di HP kamu.<br>
+        Perangkat tertaut → Tautkan perangkat →
+        Tautkan dengan nomor telepon.<br>
+        Masukkan pairing code yang muncul.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>💬 SEND MESSAGE</h2>
+
+      <input id="target" inputmode="numeric"
+      placeholder="Nomor tujuan 628xxxxxxxxxx">
+
+      <textarea id="textMessage" rows="4"
+      placeholder="Tulis pesan..."></textarea>
+
+      <button onclick="sendMessage()">KIRIM PESAN</button>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ ADMIN PANEL</h2>
+      <button class="secondary" onclick="logoutPanel()">
+        LOGOUT ADMIN
+      </button>
+    </div>
+
+  </div>
+
+  <div id="message"></div>
+
+</div>
+
+<footer>
+  HTR FAMILY BOT<br>
+  Powered by <span>mamzzz project</span>
+</footer>
+
+<script>
+async function api(url, method = "GET", data = null) {
+  const options = {
+    method,
+    headers: {
+      "Content-Type": "application/json"
+    }
+  };
+
+  if (data) options.body = JSON.stringify(data);
+
+  const response = await fetch(url, options);
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || "Terjadi kesalahan.");
+  }
+
+  return result;
+}
+
+function showMessage(text) {
+  document.getElementById("message").textContent = text;
+}
+
+async function login() {
+  try {
+    await api("/api/login", "POST", {
+      username: document.getElementById("username").value,
+      password: document.getElementById("password").value
+    });
+
+    document.getElementById("loginCard").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+
+    refreshStatus();
+    showMessage("Login berhasil.");
+  } catch (err) {
+    document.getElementById("loginMessage").textContent = err.message;
+  }
+}
+
+async function connectBot() {
+  const phone = document.getElementById("phone").value.trim();
+  const box = document.getElementById("pairCode");
+
+  box.textContent = "Meminta pairing code...";
+
+  try {
+    await api("/api/connect", "POST", { phone });
+
+    let count = 0;
+
+    const timer = setInterval(async () => {
+      count++;
+
+      try {
+        const data = await api("/api/pairing");
+
+        if (data.code) {
+          box.textContent = data.code;
+          clearInterval(timer);
+        }
+
+        if (count >= 30) {
+          box.textContent = "Kode belum tersedia. Coba lagi.";
+          clearInterval(timer);
+        }
+      } catch (err) {
+        box.textContent = err.message;
+        clearInterval(timer);
+      }
+    }, 2000);
+
+  } catch (err) {
+    box.textContent = "";
+    showMessage(err.message);
+  }
+}
+
+async function refreshStatus() {
+  try {
+    const data = await api("/api/status");
+
+    document.getElementById("status").textContent = data.status;
+
+    document.getElementById("botNumber").textContent =
+      data.number || "Belum terhubung";
+
+    if (data.code) {
+      document.getElementById("pairCode").textContent = data.code;
+    }
+  } catch (err) {
+    showMessage(err.message);
+  }
+}
+
+async function sendMessage() {
+  try {
+    const result = await api("/api/send", "POST", {
+      number: document.getElementById("target").value,
+      message: document.getElementById("textMessage").value
+    });
+
+    showMessage(result.message);
+  } catch (err) {
+    showMessage(err.message);
+  }
+}
+
+async function disconnectBot() {
+  if (!confirm("Yakin ingin logout WhatsApp?")) return;
+
+  try {
+    await api("/api/disconnect", "POST");
+    document.getElementById("pairCode").textContent = "";
+    showMessage("WhatsApp logout.");
+    refreshStatus();
+  } catch (err) {
+    showMessage(err.message);
+  }
+}
+
+async function logoutPanel() {
+  try {
+    await api("/api/logout", "POST");
+    location.reload();
+  } catch (err) {
+    showMessage(err.message);
+  }
+}
+</script>
+
+</body>
+  </html>
+  
